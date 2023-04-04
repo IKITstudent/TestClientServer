@@ -1,4 +1,4 @@
-﻿#pragma once
+﻿//#pragma once
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
