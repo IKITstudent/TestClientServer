@@ -30,7 +30,7 @@ namespace Parser
     BOOST_SPIRIT_DEFINE(expr, factor, simple)
 };
 
-static class Math_Parser
+class Math_Parser
 {
 public:
     static V evaluate(std::string_view text)

@@ -5,7 +5,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/noncopyable.hpp>
-#include <nlohmann/json.hpp>
+#include "nlohmann/json.hpp"
 #include <fstream>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include "logger.hpp"
@@ -90,7 +90,7 @@ private:
     {
         json output;
         logger.Logging("создание json файла с сообщением:",message );
-        output["primer"] = message;      
+        output["primer"] = message;
         return output;
     }
 
@@ -173,7 +173,7 @@ private:
     std::string message_;
 };
 
-void Input_math_expression(ip::tcp::endpoint ep)
+void Input_math_expression(ip::tcp::endpoint &ep)
 {
     setlocale(LC_ALL, "Russian");
     std::cout << "Введите простое математическое выражение" << std::endl;
