@@ -4,14 +4,103 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/noncopyable.hpp>
-#include "nlohmann/json.hpp"
-#include "Parser.hpp"
-#include "logger.hpp"
+#include <nlohmann/json.hpp>
+//#include "Parser.hpp"
+//#include "logger.hpp"
+#include <fstream>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/spirit/home/x3.hpp>
+#include <iomanip>
 
 using namespace boost::asio;
 using namespace boost::posix_time;
 using nlohmann::json;
 io_service service;
+
+//перенс логер и парсер в код сервера, так как пока только разбираюсь как подключать в compile explorer внутренние библиотеки
+//проект реализовывал на visual studio 2022 используя заголовочные файлы
+class Log
+{
+public:
+    Log()
+    {
+        logs.open("Logs.txt", std::ios::app);
+        logs << Delimit_log();
+        Logging("start programm");
+    }
+    ~Log()
+    {
+        Logging("stop programm");
+        logs.close();
+    }
+    void Logging(std::string message)
+    {
+        logs << getTime() << '\n' << message << '\n' << Delimit_log();
+    }
+    template <typename T>
+    void Logging(std::string message, const T log)
+    {
+        logs << getTime() << '\n' << message << '\n' << log << '\n' << Delimit_log();
+    }
+
+
+
+private:
+    std::string Delimit_log()
+    {
+        return "=====================\n";
+    }
+    boost::posix_time::ptime getTime()
+    {
+        boost::posix_time::ptime datetime = boost::posix_time::microsec_clock::universal_time();
+        return datetime;
+    }
+
+private:
+    std::ofstream logs;
+};
+
+namespace x3 = boost::spirit::x3;
+
+using V = int32_t;
+namespace Parser
+{
+
+    x3::rule<struct expr, V> const   expr{ "expr" };
+    x3::rule<struct simple, V> const simple{ "simple" };
+    x3::rule<struct factor, V> const factor{ "factor" };
+
+    auto assign = [](auto& ctx) { _val(ctx) = _attr(ctx); };
+#define BINOP(op, rhs) (x3::lit(#op) >> x3::as_parser(rhs) \
+         [([](auto& ctx) { _val(ctx) = _val(ctx) op _attr(ctx); })])
+
+    auto simple_def = x3::double_ | '(' >> expr >> ')';
+
+    auto factor_def = simple[assign] >>
+        *(BINOP(*, factor)
+            | BINOP(/ , factor)
+            | BINOP(%, factor));
+
+    auto expr_def = factor[assign] >>
+        *(BINOP(+, expr)
+            | BINOP(-, expr));
+
+    BOOST_SPIRIT_DEFINE(expr, factor, simple)
+};
+
+class Math_Parser
+{
+public:
+    static V evaluate(std::string_view text)
+    {
+        V value{};
+        if (!phrase_parse(text.begin(), text.end(), Parser::expr >> x3::eoi,
+            x3::space, value))
+            throw std::runtime_error("error in expression");
+        return value;
+    }
+};
+
 Log logger;
 
 class talk_to_client;

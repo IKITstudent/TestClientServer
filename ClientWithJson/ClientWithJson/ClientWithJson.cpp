@@ -5,20 +5,65 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/noncopyable.hpp>
-#include "nlohmann/json.hpp"
+#include <nlohmann/json.hpp>
 #include <fstream>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include "logger.hpp"
+//#include "logger.hpp"
 
 #define MEM_FN(x)       boost::bind(&self_type::x, shared_from_this())
 #define MEM_FN1(x,y)    boost::bind(&self_type::x, shared_from_this(),y)
 #define MEM_FN2(x,y,z)  boost::bind(&self_type::x, shared_from_this(),y,z)
 
+
 using nlohmann::json;
 using namespace boost::asio;
 io_service service;
-Log logger;
 
+//перенс логер в код клиента, так как пока только разбираюсь как подключать в compile explorer внутренние библиотеки
+//проект реализовывал на visual studio 2022 используя заголовочные файлы
+
+class Log
+{
+public:
+    Log()
+    {
+        logs.open("Logs.txt", std::ios::app);
+        logs << Delimit_log();
+        Logging("start programm");
+    }
+    ~Log()
+    {
+        Logging("stop programm");
+        logs.close();
+    }
+    void Logging(std::string message)
+    {
+        logs << getTime() << '\n' << message << '\n' << Delimit_log();
+    }
+    template <typename T>
+    void Logging(std::string message, const T log)
+    {
+        logs << getTime() << '\n' << message << '\n' << log << '\n' << Delimit_log();
+    }
+
+
+
+private:
+    std::string Delimit_log()
+    {
+        return "=====================\n";
+    }
+    boost::posix_time::ptime getTime()
+    {
+        boost::posix_time::ptime datetime = boost::posix_time::microsec_clock::universal_time();
+        return datetime;
+    }
+
+private:
+    std::ofstream logs;
+};
+
+Log logger;
 
 class talk_to_svr : public boost::enable_shared_from_this<talk_to_svr>
     , boost::noncopyable {
